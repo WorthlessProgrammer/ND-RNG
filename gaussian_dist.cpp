@@ -8,6 +8,13 @@
 
 std::array<int, MAX_GEN_CAP> nums = { 0 };
 
+#define ASSERT(x) do { \
+                        if (!(x)) { \
+                            std::cout << "[ERROR]\n"; \
+                            exit(1); \
+                        } \
+                    } while(0)
+
 void print_arr_info(int* arr, size_t size)
 {
     int sum = 0;
@@ -31,8 +38,10 @@ int pick_random_normal_dst(float mean, int x, int y)
     return a;
 }
 
-void gen_samples(int *buffer, int samples, float mean, float sd, int range, int max_titer = 100)
+void gen_samples(int *buffer, int samples, float mean, float sd, int max_titer = 100)
 {
+    ASSERT(sd >= 0.0f);
+
     std::cout << "Generating "
               << samples 
               << " samples whith mean "
@@ -43,7 +52,7 @@ void gen_samples(int *buffer, int samples, float mean, float sd, int range, int 
     float curr_sd = 0;
 
     for (int i = 0; i <= samples; i += 2) {
-        buffer[i] = pick_random_normal_dst(mean, mean-range, mean+range);
+        buffer[i] = pick_random_normal_dst(mean, mean-sd, mean+sd);
         if (buffer[i] > mean)
             buffer[i+1] = mean - (buffer[i] - mean);
         else { 
@@ -58,7 +67,7 @@ void gen_samples(int *buffer, int samples, float mean, float sd, int range, int 
             }
             curr_sd += (buffer[i + 1] - mean)*(buffer[i + 1] - mean);
             curr_sd /= samples;
-            //std::cout << curr_sd << ", " << i << "\n";
+            curr_sd = sqrtf(curr_sd);
 
             if (curr_sd <= sd - 1.5f) {
                 if (buffer[i] >= mean) {
@@ -77,6 +86,8 @@ void gen_samples(int *buffer, int samples, float mean, float sd, int range, int 
                     buffer[i] += 1;
                     buffer[i + 1] -= 1;
                 }
+            } else {
+                break;
             }
         }
     }
@@ -84,8 +95,8 @@ void gen_samples(int *buffer, int samples, float mean, float sd, int range, int 
 
 int main()
 {
-    int samples = 100;
-    gen_samples(nums.data(), samples, 69.5f, 4.0f, 42);
+    int samples = 250;
+    gen_samples(nums.data(), samples, 69.5f, 58.0f);
     print_arr_info(nums.data(), samples);
     
     return 0;
