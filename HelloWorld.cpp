@@ -1,17 +1,92 @@
-/*
- * HelloWorld.cpp
- *
- *  Created on: 20 may. 2021
- *      Author: david
- */
+#include <iostream>
+#include <array>
+#include <cstdlib>
+#include <ctime>
+#include <cmath>
 
-#include<iostream>
-using namespace std;
+#define MAX_GEN_CAP 500
 
-int main(){
-	cout << "Hello World!!" << endl;
-	cout << "This is my very first program in C++";
-	return 0;
+std::array<int, MAX_GEN_CAP> nums = { 0 };
+
+void print_arr_info(int* arr, size_t size)
+{
+    int sum = 0;
+    int ssum = 0;
+    std::cout << "[";
+    for (size_t i = 0; i < size; i++) {
+        std::cout << arr[i] << ", ";
+        sum += arr[i];
+        ssum += (arr[i] * arr[i]);
+    }
+    std::cout << "]\n";
+    float mean = sum / (float)size;
+    std::cout << "[Mean]" << mean << '\n'
+              << "[Sd]" << sqrtf(ssum / (float)size - mean*mean);
+
 }
 
+int pick_random_normal_dst(float mean, int x, int y) 
+{
+    int a = rand()%y - x / (y - x);
+    return a;
+}
 
+void gen_samples(int *buffer, int samples, float mean, float sd, int range, int max_titer = 100)
+{
+    std::cout << "Generating "
+              << samples 
+              << " samples whith mean "
+              << mean 
+              << " and standard deviation "
+              << sd << "\n";
+
+    float curr_sd = 0;
+
+    for (int i = 0; i <= samples; i += 2) {
+        buffer[i] = pick_random_normal_dst(mean, mean-range, mean+range);
+        if (buffer[i] > mean)
+            buffer[i+1] = mean - (buffer[i] - mean);
+        else { 
+            buffer[i+1] = (mean - buffer[i]) + mean; 
+        }
+        for (int k = 0; k < max_titer; k++) {
+            curr_sd = 0.0f;
+
+            for (int j = 0; j < i + 1; j++) {
+                float dx = buffer[j] - mean;
+                curr_sd += dx * dx;
+            }
+            curr_sd += (buffer[i + 1] - mean)*(buffer[i + 1] - mean);
+            curr_sd /= samples;
+            //std::cout << curr_sd << ", " << i << "\n";
+
+            if (curr_sd <= sd - 1.5f) {
+                if (buffer[i] >= mean) {
+                    buffer[i] += 1;
+                    buffer[i + 1] -= 1;
+                } else {
+                    buffer[i] -= 1;
+                    buffer[i + 1] += 1;
+                }
+            } else if (curr_sd > sd + 1.5f){
+                if (buffer[i] >= mean) {
+                    buffer[i] -= 1;
+                    buffer[i + 1] += 1;
+                }
+                else {
+                    buffer[i] += 1;
+                    buffer[i + 1] -= 1;
+                }
+            }
+        }
+    }
+}
+
+int main()
+{
+    int samples = 100;
+    gen_samples(nums.data(), samples, 69.5f, 4.0f, 42);
+    print_arr_info(nums.data(), samples);
+    
+    return 0;
+}
